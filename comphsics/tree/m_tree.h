@@ -11,38 +11,28 @@
 #include <queue>
 #include <cstring>
 
+
+#define TREE_TRAITS(NODE_TYPE)   \
+		public:using node_type = NODE_TYPE;\
+		using node_pointer = NODE_TYPE*;\
+		using node_iterator = NODE_TYPE*;\
+		using node_type_reference = NODE_TYPE&;\
+		using const_node_type = const NODE_TYPE;\
+		using const_node_pointer = const NODE_TYPE*;\
+		using const_node_iterator = const NODE_TYPE*;\
+		using const_node_type_reference = const NODE_TYPE&; 
+
+
 // macros defines signals for an empty node
 // end of a node.
 #define EMPTY_NODE_INDICATOR '#'
 
 namespace comphsics {
 	namespace tree {
-
-		// TODO: extract traits to this type.
-		template<typename NodeType>
-		struct tree_traits{
-			using node_type = NodeType;
-			using node_pointer = NodeType*; 
-			using node_iterator = NodeType*; 
-			using node_type_reference = NodeType&; 
-			using const_node_type = const NodeType; 
-			using const_node_pointer = const NodeType*; 
-			using const_node_iterator = const NodeType*; 
-			using const_node_type_reference = const NodeType&;
-		};
-
 		// using default m_node.
 		template<typename DataType,size_t Size,typename NodeType=node::m_node<DataType,Size>>
-		class m_tree {
-		public:
-			using node_type = NodeType;
-			using node_pointer = NodeType*; 
-			using node_iterator = NodeType*; 
-			using node_type_reference = NodeType&; 
-			using const_node_type = const NodeType; 
-			using const_node_pointer = const NodeType*; 
-			using const_node_iterator = const NodeType*; 
-			using const_node_type_reference = const NodeType&; 
+		class m_tree{
+			TREE_TRAITS(NodeType)
 
 		private:
 			void set_m(size_t m) {

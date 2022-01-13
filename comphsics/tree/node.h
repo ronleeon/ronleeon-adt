@@ -27,42 +27,20 @@ namespace comphsics{
 			// ++,--(of every iterator)
 			// begin(),end(),rbegin(),rend(),cbegin(),cend(),crbegin(),crend()
 			// default:using a std::array to store all children.
-			template<typename NodeType,typename DataType,size_t Size>
-			struct abstract_node{
-				// record data, multi-data can be zipped into one type.
-				DataType data;
-				size_t size;
-				size_t child_size;// real child size
-				bool is_leaf;
-				NodeType* parent;
-				size_t height;
-				explicit abstract_node(const DataType &Data):data(Data),child_size(0),size(Size)
-					,is_leaf(true),parent(nullptr),height(0){}
-				explicit abstract_node(const DataType &&Data):data(Data),child_size(0),size(Size)
-					,is_leaf(true),parent(nullptr),height(0){}
-				abstract_node(const abstract_node&)=delete;
-				abstract_node()=delete;
-				abstract_node(abstract_node&& rhs){
-					data=std::move(rhs.data);
-					child_size=rhs.child_size;
-					size=rhs.size;
-					is_leaf=rhs.is_leaf;
-					parent=rhs.parent;
-					rhs.parent=nullptr;
-					height=rhs.height;
-				}
-
-				
-				~abstract_node(){
-					for(auto Child=child_begin(),End=child_end();Child!=End;++Child){
-						if(*Child){
-							delete *Child;
-						}
-					}
-				}
+			template <typename NodeType,size_t Size>
+			struct random_access_child_storage{
 				// default storing pointers.
 				std::array<NodeType*,Size> children;
+				size_t child_size;// real child size
+				size_t size;
 				
+				explicit random_access_child_storage():size(Size),child_size(0){}
+				random_access_child_storage(const random_access_child_storage&)=delete;
+				random_access_child_storage(random_access_child_storage&& rhs){
+					children=std::move(rhs.children);
+					child_size=rhs.child_size;
+					size=rhs.size;
+				}
 				using const_child_iterator=typename std::array<NodeType*,Size>::const_iterator;
 				using child_iterator=typename std::array<NodeType*,Size>::iterator;
 				using reverse_child_iterator=typename std::array<NodeType*,Size>::reverse_iterator;
@@ -103,6 +81,49 @@ namespace comphsics{
 				const_reverse_child_iterator child_rend() const {
 					return children.crend();
 				}
+
+				virtual ~random_access_child_storage(){
+					for(auto Child=child_begin(),End=child_end();Child!=End;++Child){
+						if(*Child){
+							delete *Child;
+						}
+					}
+				}
+			};
+			template <typename DataType>
+			struct default_data_storage{
+				DataType data;
+				explicit default_data_storage(const DataType &Data):data(Data){}
+				explicit default_data_storage(const DataType &&Data):data(std::move(Data)){}
+
+				default_data_storage(const default_data_storage&)=delete;
+				default_data_storage()=delete;
+				default_data_storage(default_data_storage&& rhs){
+					data=std::move(rhs.data);
+				}
+			};
+			template<typename NodeType,typename DataType,size_t Size
+				,typename data_storage=default_data_storage<DataType>
+				,typename child_storage=random_access_child_storage<NodeType,Size>
+			>
+			struct abstract_node:child_storage,data_storage{
+				
+				bool is_leaf;
+				NodeType* parent;
+				size_t height;
+				explicit abstract_node(const DataType &Data):data_storage(Data)
+					,child_storage(),is_leaf(true),parent(nullptr),height(0){}
+				explicit abstract_node(const DataType &&Data):data_storage(std::move(Data))
+					,child_storage(),is_leaf(true),parent(nullptr),height(0){}
+				abstract_node(const abstract_node&)=delete;
+				abstract_node()=delete;
+				abstract_node(abstract_node&& rhs):child_storage(std::move(rhs))
+					,data_storage(std::move(rhs)){
+					is_leaf=rhs.is_leaf;
+					parent=rhs.parent;
+					rhs.parent=nullptr;
+					height=rhs.height;
+				}
 			};
 			
 			template<typename DataType,size_t Size>
@@ -113,7 +134,7 @@ namespace comphsics{
 				explicit m_node(const DataType &&Data)
 					:abstract_node<m_node<DataType,Size>,DataType,Size>(std::move(Data)){}
 			};
-
+			
 			// binary node can default children storage(left and right children)
 			template <typename NodeType,typename DataType>
 			struct abstract_b_node :abstract_node<NodeType,DataType,2>{
@@ -236,11 +257,46 @@ namespace comphsics{
 				COLOR color;
 			};
 
-			// B-tree node
+			// Actually,also use an array to store all pointers.
+			template <typename NodeType,size_t Size>
+			struct B_child_storage:random_access_child_storage<NodeType,Size>{
+				// B- tree storing pointers.
+				// k data stores k+1 children.
+				// child_size>=ceil(size/2) ,<=size
+				explicit B_child_storage(){}
+				B_child_storage(const B_child_storage&)=delete;
+				B_child_storage(B_child_storage&& rhs)
+					:random_access_child_storage<NodeType,Size>(std::move(rhs)){
+				}
+			};
 
+			template<typename DataType,size_t Size>
+			struct B_data_storage{
+				std::array<DataType,Size> data;
+				size_t data_size;
+				size_t size;
+				B_data_storage():size(Size),data_size(0){};
+				B_data_storage(const B_data_storage&)=delete;
+				B_data_storage(B_data_storage&& rhs){
+					data=std::move(rhs.data);
+				}
+			};
+
+			struct Bplus_child_storage{};
+
+			struct Bplus_data_storage{};
+			// B-tree node
+			template <typename DataType,size_t Size>
+			struct B_node final:abstract_node<B_node<DataType,Size>,DataType,Size
+				,B_data_storage<DataType,Size>,B_child_storage<B_node<DataType,Size>,Size>>{
+				
+			};
 
 			// B+tree
-
+			template <typename NodeType,typename DataType>
+			struct Bplus_node final:abstract_node<NodeType,DataType,2>{
+				
+			};
 		}
 	}
 }

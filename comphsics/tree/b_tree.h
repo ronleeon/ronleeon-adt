@@ -10,15 +10,9 @@ namespace comphsics{
 		template<typename DataType,typename NodeType=node::b_node<DataType>>
 		class b_tree:public m_tree<DataType,2,NodeType>{
 			using basic_type=m_tree<DataType,2,NodeType>;
-		public:
-			using node_type = NodeType;
-			using node_pointer = NodeType*; 
-			using node_iterator = NodeType*; 
-			using node_type_reference = NodeType&; 
-			using const_node_type = const NodeType; 
-			using const_node_pointer = const NodeType*; 
-			using const_node_iterator = const NodeType*; 
-			using const_node_type_reference = const NodeType&; 
+		
+		
+			TREE_TRAITS(NodeType)
 		protected:
 
 			explicit b_tree(std::nullptr_t):m_tree<DataType,2,NodeType>(nullptr){}

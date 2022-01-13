@@ -15,15 +15,9 @@ namespace comphsics{
 			// prohibit all create functions.
 			using basic_type::create_binary_sort_tree;
 			using basic_type::shift_height;
-		public:
-			using node_type = NodeType;
-			using node_pointer = NodeType*; 
-			using node_iterator = NodeType*; 
-			using node_type_reference = NodeType&; 
-			using const_node_type = const NodeType; 
-			using const_node_pointer = const NodeType*; 
-			using const_node_iterator = const NodeType*; 
-			using const_node_type_reference = const NodeType&; 
+	
+	
+			TREE_TRAITS(NodeType)
 		private:
 			explicit rb_tree(node_pointer t)
 				:bs_tree<DataType,Compare,NodeType>(t){}

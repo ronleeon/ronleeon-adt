@@ -22,15 +22,9 @@ namespace comphsics{
 			using basic_type::create_tree_l;
 			using basic_type::create_tree_r;
 			using basic_type::create_empty_tree;
-		public:
-			using node_type = NodeType;
-			using node_pointer = NodeType*; 
-			using node_iterator = NodeType*; 
-			using node_type_reference = NodeType&; 
-			using const_node_type = const NodeType; 
-			using const_node_pointer = const NodeType*; 
-			using const_node_iterator = const NodeType*; 
-			using const_node_type_reference = const NodeType&; 
+		
+		
+			TREE_TRAITS(NodeType)
 		private:
 			// proallocated nodes size within data sizes to be compared.
 
@@ -176,7 +170,7 @@ namespace comphsics{
 				Ret._owned=false;
 				Ret._wpl=_wpl;
 				Ret._ele=_ele;
-				Ret.basic_type::num_of_nodes=num_of_nodes;
+				Ret.num_of_nodes=basic_type::num_of_nodes;
 				return Ret;
 			}
 			std::string to_string()const override {

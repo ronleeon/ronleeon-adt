@@ -1,8 +1,10 @@
-#ifndef COMPHSICS_ADT_B-_TREE_H
-#define COMPHSICS_ADT_B-_TREE_H
+
+#ifndef COMPHSICS_ADT_B__TREE_H
+#define COMPHSICS_ADT_B__TREE_H
 
 #include "comphsics/tree/m_tree.h"
 #include <istream>
+
 namespace comphsics{
 	namespace tree{
 
@@ -14,15 +16,9 @@ namespace comphsics{
 			// prohibit all create functions.
 			using basic_type::create_tree_l;
 			using basic_type::create_tree_r;
-		public:
-			using node_type = NodeType;
-			using node_pointer = NodeType*; 
-			using node_iterator = NodeType*; 
-			using node_type_reference = NodeType&; 
-			using const_node_type = const NodeType; 
-			using const_node_pointer = const NodeType*; 
-			using const_node_iterator = const NodeType*; 
-			using const_node_type_reference = const NodeType&; 
+			
+			
+			TREE_TRAITS(NodeType)
 		public:
 			static node_pointer left_most(node_pointer node){
 				if(!node){

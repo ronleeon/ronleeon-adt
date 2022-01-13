@@ -24,15 +24,9 @@ namespace comphsics{
 			enum class THREAD_KIND{
 				UNTHREADED,THREAD_PRE,THREAD_IN,THREAD_POST
 			};
-		public:
-			using node_type = NodeType;
-			using node_pointer = NodeType*; 
-			using node_iterator = NodeType*; 
-			using node_type_reference = NodeType&; 
-			using const_node_type = const NodeType; 
-			using const_node_pointer = const NodeType*; 
-			using const_node_iterator = const NodeType*; 
-			using const_node_type_reference = const NodeType&; 
+		
+		
+			TREE_TRAITS(NodeType)
 		private:
 			// thread tree unresolved problem:
 			// 1): find prior of a node in pre-thread tree.
@@ -213,7 +207,7 @@ namespace comphsics{
 				Ret._owned=false;
 				Ret._thread_nodes=std::move(_thread_nodes);
 				Ret._kind=_kind;
-				Ret.num_of_nodes=base_type::num_of_nodes;
+				Ret.num_of_nodes=basic_type::num_of_nodes;
 				return Ret;
 			}
 			t_tree():t_tree(nullptr){}
@@ -350,7 +344,7 @@ namespace comphsics{
 					in>> Data;
 					node_pointer node=new node_type(Data);
 					Ret._root=node;
-					++base_type::num_of_nodes;
+					++basic_type::num_of_nodes;
 					tmp_queue.push(Ret._root);
 				}
 				while (!tmp_queue.empty()){
@@ -371,7 +365,7 @@ namespace comphsics{
 							continue;
 						}else {
 							in>> Data;
-							++base_type::num_of_nodes;
+							++basic_type::num_of_nodes;
 							node_pointer node=new node_type(Data);
 							*It=node;
 							pop->is_leaf=false;
