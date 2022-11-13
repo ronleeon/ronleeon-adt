@@ -1,14 +1,14 @@
 // provides a set containers implemented by bs_tree.
-#ifndef COMPHSICS_ADT_TREE_SET_H
-#define COMPHSICS_ADT_TREE_SET_H
+#ifndef RONLEEON_ADT_TREE_SET_H
+#define RONLEEON_ADT_TREE_SET_H
 
-#include "comphsics/tree/bs_tree.h"
-#include "comphsics/tree/avl_tree.h"
-#include "comphsics/tree/rb_tree.h"
+#include "ronleeon/tree/bs_tree.h"
+#include "ronleeon/tree/avl_tree.h"
+#include "ronleeon/tree/rb_tree.h"
 #include <functional>
 #include <exception>
 
-namespace comphsics {
+namespace ronleeon {
 	namespace tree{
 
 		// Provide Java style Iterator.
@@ -70,7 +70,7 @@ namespace comphsics {
 				return *this;
 			}
 
-			tree_set_iterator operator--(int)
+            tree_set_iterator operator--(int)
 			{
 				tree_set_iterator Tmp(node);
 				node=Tree::tree_set_decrement(node);
@@ -89,7 +89,7 @@ namespace comphsics {
 		};
 
 
-		// Alternatively, you can implements you own tree , such as bs_tree, avl_tree
+		// Alternatively, you can implement you own tree , such as bs_tree, avl_tree
 		//, and rb_tree.(pure bs_tree is not recommended)
 
 		template <typename NodeValue,typename Compare=std::less<NodeValue>,

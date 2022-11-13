@@ -1,15 +1,15 @@
 // provides a map containers implemented by bs_tree.
-#ifndef COMPHSICS_ADT_TREE_MAP_H
-#define COMPHSICS_ADT_TREE_MAP_H
+#ifndef RONLEEON_ADT_TREE_MAP_H
+#define RONLEEON_ADT_TREE_MAP_H
 
-#include "comphsics/tree/bs_tree.h"
-#include "comphsics/tree/avl_tree.h"
-#include "comphsics/tree/rb_tree.h"
+#include "ronleeon/tree/bs_tree.h"
+#include "ronleeon/tree/avl_tree.h"
+#include "ronleeon/tree/rb_tree.h"
 #include <functional>
 #include <exception>
 
 
-namespace comphsics{
+namespace ronleeon{
 	namespace tree{
 
 		// Compare partially template function.

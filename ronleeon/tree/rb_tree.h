@@ -1,27 +1,27 @@
-#ifndef COMPHSICS_ADT_RB_TREE_H
-#define COMPHSICS_ADT_RB_TREE_H
+#ifndef RONLEEON_ADT_RB_TREE_H
+#define RONLEEON_ADT_RB_TREE_H
 
-#include "comphsics/tree/bs_tree.h"
+#include "ronleeon/tree/abstract_tree.h"
 #include <istream>
-namespace comphsics{
+namespace ronleeon{
 	namespace tree{
 
 
 		// Guarantee all NodeType data are not equal,otherwise the latter 
 		// will be ignored.
 		template<typename DataType,typename Compare=std::less<DataType>,typename NodeType=node::rb_node<DataType>>
-		class rb_tree:public bs_tree<DataType,Compare,NodeType>{
-			using basic_type=bs_tree<DataType,Compare,NodeType>;
+		class rb_tree:public abstract_bs_tree<DataType,Compare,NodeType
+			,rb_tree<DataType,Compare,NodeType>>{
+			using basic_type=abstract_bs_tree<DataType,Compare,NodeType
+				,rb_tree<DataType,Compare,NodeType>>;
 			// prohibit all create functions.
-			using basic_type::create_binary_sort_tree;
 			using basic_type::shift_height;
 	
 	
 			TREE_TRAITS(NodeType)
 		private:
-			explicit rb_tree(node_pointer t)
-				:bs_tree<DataType,Compare,NodeType>(t){}
-			explicit rb_tree(std::nullptr_t):bs_tree<DataType,Compare,NodeType>(nullptr){}
+
+			explicit rb_tree(std::nullptr_t):basic_type(nullptr){}
 
 
 			void shift_rb_node(node_pointer node){
@@ -263,47 +263,13 @@ namespace comphsics{
 		public:
 			rb_tree():rb_tree(nullptr){};
 			rb_tree(const rb_tree&)=delete;
-			rb_tree(const DataType data[],size_t Size):bs_tree<DataType,Compare,NodeType>(nullptr){
-				for(size_t Index=0;Index<Size;++Index){	
-					insert(data[Index]);
-				}
+			rb_tree(const DataType data[],size_t Size):basic_type(data,Size){
 			}
-			rb_tree(rb_tree && tree):bs_tree<DataType,Compare,NodeType>((bs_tree<DataType,Compare,NodeType>&&)tree) {}
-			// return a shared tree holding the same nodes.
-			[[nodiscard("Unused Tree")]] rb_tree make_shared() {
-				rb_tree<DataType,Compare,NodeType> Ret(basic_type::_root);
-				Ret._owned=false;
-				Ret.num_of_nodes=basic_type::num_of_nodes;
-				return Ret;
-			}
+			rb_tree(rb_tree && tree):basic_type(std::move(tree)) {}
+
 			std::string to_string()const override {
 				return "<-RB(Red,Black) Tree->";
 			}
-			// NOTICE: EMPTY_NODE_INDICATOR is used to denote the end of input.
-			static rb_tree create_rb_tree(std::istream &in=std::cin) {
-				rb_tree<DataType,Compare,NodeType> tree(nullptr); 
-				char Indicator;
-				DataType Data;
-				// !!! allowed to read a char of indicator.
-				while(true){
-					root_input:Indicator=in.peek();
-					if(Indicator=='\n'){
-						in.get();
-						goto root_input;
-					}else if(Indicator==' '||Indicator=='\t'){
-						in.get();
-						continue;
-					}else if(Indicator==EMPTY_NODE_INDICATOR){
-						break;
-					}else {
-						// take back to stream.
-						in>> Data;
-						tree.insert(Data);
-					}
-				}
-				return tree;
-			}
-
 
 			// insert the data if find it, ignored!
 			// the second returns whether insert operation is successful.
@@ -346,10 +312,6 @@ namespace comphsics{
 				shift_rb_node(node);
 				fix_after_insert(node);
 				return find_result;
-			}
-
-			std::pair<node_pointer,bool> insert(DataType&& data){
-				return insert(data);
 			}
 
 			node_pointer erase(node_pointer node,bool left=true) override {
@@ -447,9 +409,6 @@ namespace comphsics{
 				erase(find_result.first,left);
 			}
 
-			void erase(DataType&& data,bool left=true){
-				erase(data,left);
-			}
 
 			// NOTE: null node is also black.
 			bool is_black(const_node_pointer node) const {
@@ -460,11 +419,6 @@ namespace comphsics{
 			}
 			bool is_red(const_node_pointer node) const {
 				return !is_black(node);
-			}
-
-			[[nodiscard("Unused Tree")]] static rb_tree create_empty_tree() {
-				rb_tree Ret(nullptr);
-				return Ret;
 			}
 
 			void print_visiting_node(const_node_pointer t,std::ostream& out)const override{
