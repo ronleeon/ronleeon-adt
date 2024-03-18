@@ -2,235 +2,270 @@
 #ifndef RONLEEON_ADT_TREE_SET_H
 #define RONLEEON_ADT_TREE_SET_H
 
-#include "ronleeon/tree/bs_tree.h"
-#include "ronleeon/tree/avl_tree.h"
 #include "ronleeon/tree/rb_tree.h"
 #include <functional>
 #include <exception>
+#include <iterator>
+#include <utility>
 
-namespace ronleeon {
-	namespace tree{
+namespace ronleeon::tree{
 
-		// Provide Java style Iterator.
-		template<typename NodeType,typename ValueType,typename Tree>
-		struct tree_set_iterator;
-		template<typename NodeType,typename ValueType,typename Tree>
-		struct tree_set_iterator<NodeType*,ValueType,Tree>
+	template<typename NodeType,typename ValueType,typename Container>
+	struct tree_set_iterator
+	{
+		using iterator_category = std::forward_iterator_tag;
+		using difference_type   = std::ptrdiff_t;
+		using value_type        = const ValueType;
+		using pointer           = const ValueType*; 
+		using reference         = const ValueType&;  
+
+		const NodeType* node;
+
+		const Container& tree;
+
+		tree_set_iterator(const Container& container) : tree(container), node(nullptr) {}
+
+		explicit
+		tree_set_iterator(const NodeType* x,const Container& container) :node(x),  tree(container){ }
+
+		const NodeType* get_node_ptr()const{
+			return node;
+		}
+
+		reference operator*() const
+		{ return node->data;}
+
+		pointer operator->() const
+		{ return &(node->data); }
+
+
+		tree_set_iterator& operator++()
 		{
+			node=tree.tree_set_increment(node);
+			return *this;
+		}
 
-			typedef NodeType*  type;
-			typedef NodeType*& reference;
-			typedef NodeType** pointer;
-			typedef ValueType value_type;
+		tree_set_iterator operator++(int)
+		{
+			tree_set_iterator Tmp(node);
+			node=tree.tree_set_increment(node);
+			return Tmp;
+		}
 
-			type node;
-			tree_set_iterator() : node() { }
+		tree_set_iterator& operator--()
+		{
+			node=tree.tree_set_decrement(node);
+			return *this;
+		}
 
-			explicit
-			tree_set_iterator(type x) :node(x) { }
+        tree_set_iterator operator--(int)
+		{
+			tree_set_iterator Tmp(node);
+			node=tree.tree_set_decrement(node);
+			return Tmp;
+		}
 
-			reference get_node_ptr()const{
-				return static_cast<reference>(node);
+		friend bool operator==(const tree_set_iterator& x, const tree_set_iterator& y)
+		{
+			return x.node==y.node;
+		}
+
+		friend bool operator!=(const tree_set_iterator& x, const tree_set_iterator& y)
+		{
+			return x.node!=y.node;
+		}
+	};
+
+
+	// Alternatively, you can implement you own tree , such as bs_tree, avl_tree
+	//, and rb_tree.(pure bs_tree is not recommended)
+
+	template <typename NodeValue,typename Compare=std::less<NodeValue>,
+		typename Tree=rb_tree<NodeValue,Compare>>
+	class tree_set{
+	public:
+		typedef tree_set_iterator<typename Tree::node_type,NodeValue,tree_set> iterator;
+		typedef iterator const_iterator;
+	private:
+		Tree tree;
+
+		// First and Last children
+		typename Tree::const_node_pointer start;
+
+		typename Tree::const_node_pointer last;
+
+
+		// use in end iterator, implement as `this` ptr.
+		typename Tree::const_node_pointer this_end;
+
+	public:
+		tree_set(Compare comp_ = Compare{} ):tree(comp_), last(reinterpret_cast<typename Tree::const_node_pointer>(this)), start(reinterpret_cast<typename Tree::const_node_pointer>(this)),this_end(reinterpret_cast<typename Tree::const_node_pointer>(this)){}
+
+		tree_set(const tree_set&) = delete;
+
+		tree_set(tree_set&&) = delete;
+
+		tree_set(std::initializer_list<NodeValue> l,Compare comp_ = Compare{})
+		: tree_set(comp_)
+		{
+			insert(l);
+		}
+
+
+		~tree_set() = default;
+
+		tree_set& operator=(const tree_set&)=delete;
+
+		tree_set& operator=(tree_set&&) = delete;
+
+		size_t size() const {
+			return tree.size();
+		}
+
+		typename Tree::const_node_pointer tree_set_increment(typename Tree::const_node_pointer value) const {
+			auto Next = Tree::increment(value);
+			if(!Next){
+				return this_end;
 			}
-
-			ValueType operator*() const 
-			{ return node->data;}
-
-			ValueType* operator->() const
-			{ return &(node->data); }
+			return Next;
+		}
 
 
-			bool has_next(){
-				tree_set_iterator Tmp(this->node);
-				Tree::tree_set_increment(Tmp);
-				return Tmp.is_null()?false:true;
-			}
-
-			bool is_null() const {
-				return node?false:true;
-			}
-			
-
-			tree_set_iterator& operator++() 
-			{	
-				node=Tree::tree_set_increment(node);
-				return *this;
-			}
-
-			tree_set_iterator operator++(int) 
-			{	
-				tree_set_iterator Tmp(node);
-				node=Tree::tree_set_increment(node);
-				return Tmp;
-			}
-
-			tree_set_iterator& operator--()
-			{
-				node=Tree::tree_set_decrement(node);
-				return *this;
-			}
-
-            tree_set_iterator operator--(int)
-			{
-				tree_set_iterator Tmp(node);
-				node=Tree::tree_set_decrement(node);
-				return Tmp;
-			}
-			
-			operator bool()
-			{
-				return !is_null();
-			}
-
-			friend bool operator==(const tree_set_iterator& x, const tree_set_iterator& y)
-			{ 
-				return x.node=y.node; 
-			}	
-		};
-
-
-		// Alternatively, you can implement you own tree , such as bs_tree, avl_tree
-		//, and rb_tree.(pure bs_tree is not recommended)
-
-		template <typename NodeValue,typename Compare=std::less<NodeValue>,
-			typename Tree=rb_tree<NodeValue,Compare>>
-		class tree_set{
-		public:
-			typedef tree_set_iterator<typename Tree::node_pointer,NodeValue,tree_set> iterator;
-		private:
-			Tree tree;
-		public:
-			tree_set():tree(){ 
-			}
-
-			tree_set(const tree_set&) = delete;
-
-			tree_set(tree_set&&) = delete;
-
-			tree_set(std::initializer_list<NodeValue> l)
-			: tree_set()
-			{ 
-				insert(l); 
-			}
-
-
-			~tree_set() = default;
-
-			tree_set& operator=(const tree_set&)=delete;
-
-			tree_set& operator=(tree_set&&) = delete;
-
-			size_t size() const {
-				return tree.size();
-			}
-
-			static typename Tree::node_pointer tree_set_increment(typename Tree::node_pointer value){
-				return Tree::increment(value);
-			}
-
-
-			static typename Tree::node_pointer tree_set_decrement(typename Tree::node_pointer value){
-				return Tree::decrement(value);
-			}
-
-
-			// Return an iterator of the first element or the last element.
-			
-			iterator iter() { 
-				return iterator(tree.left_most(tree.get_root())); 
-			}
-
-			iterator iter_last(){
-				return iterator(tree.right_most(tree.get_root())); 
-			}
-
-			std::pair<iterator, bool> insert(const NodeValue& x)
-			{ 
-				std::pair<iterator,bool> Ret;
-				auto InsertResult=tree.insert(x);
-				if(InsertResult.second){
-					Ret.first=iterator(InsertResult.first);
-					Ret.second=true;
-				}else{
-					Ret.first=iterator(nullptr);
-					Ret.second=false;
+		typename Tree::const_node_pointer tree_set_decrement(typename Tree::const_node_pointer value) const {
+			if(value == reinterpret_cast<typename Tree::const_node_pointer>(this)){
+					return last;
 				}
-				return Ret;
-			}
-
-			std::pair<iterator, bool> insert(NodeValue&& x)
-			{ 	
-				std::pair<iterator,bool> Ret;
-				auto InsertResult=tree.insert(std::move(x));
-				if(InsertResult.second){
-					Ret.first=iterator(InsertResult.first);
-					Ret.second=true;
-				}else{
-					Ret.first=iterator(nullptr);
-					Ret.second=false;
+				auto Pre = Tree::decrement(value);
+				if(!Pre){
+					return this_end;
 				}
-				return Ret; 
+				return Pre;
+		}
+
+
+		std::pair<iterator, bool> insert(const NodeValue& x)
+		{
+			auto InsertResult=tree.insert(x);
+			if(InsertResult.second){
+				start = tree.start();
+				last = tree.last();
+				return std::make_pair<iterator, bool>(iterator(InsertResult.first, *this), true);
+			}else{
+				// end iterator
+				return std::make_pair<iterator, bool>(end(),false);
 			}
+		}
 
+		void insert(std::initializer_list<NodeValue> list)
+		{
+			insert(list.begin(), list.end());
+		}
 
-
-			void insert(std::initializer_list<NodeValue> list)
-			{ 
-				insert(list.begin(), list.end()); 
+		template<typename InputIterator>
+		void insert(InputIterator first, InputIterator last)
+		{
+			for(auto &It=first;It!=last;++It){
+				insert(*It);
 			}
-
-			template<typename InputIterator>
-			void insert(InputIterator first, InputIterator last)
-			{ 
-				for(auto &It=first;It!=last;++It){
-					insert(*It);
-				}	
-			}
+		}
 
 
-			iterator erase(iterator position)
-			{ 
-				auto EraseResult=tree.erase(position.get_node_ptr());
-				if(EraseResult){
-					return iterator(nullptr);
-				}else{
-					return iterator(EraseResult);
+		iterator erase(iterator position)
+		{
+			auto EraseResult=tree.erase(position.get_node_ptr());
+			if(EraseResult){
+				return end();
+			}else{
+				start = tree.start();
+				last = tree.last();
+				if(!start){
+					start = this_end;
 				}
-			}
-			
-
-			void erase(const NodeValue& x)
-			{ 
-				tree.erase(x);
-			}
-
-
-			void clear() { tree.destroy(); }
-
-
-
-			iterator find(const NodeValue& x)
-			{ 
-				auto FindResult= tree.find(x); 
-				if(FindResult.second){
-					return iterator(FindResult.first);
-				}else{
-					return iterator(nullptr);
+				if(!last){
+					last = this_end;
 				}
-			} 
-
-			int count(const NodeValue& x) const
-			{ return find(x) == iterator(nullptr) ? 0 : 1; }
-
-			bool contains(const NodeValue& x) const
-			{ return find(x) != iterator(nullptr); }
+				return iterator(EraseResult, *this);
+			}
+		}
 
 
+		void erase(const NodeValue& x)
+		{
+			tree.erase(x);
+		}
 
-		};
 
-	}
+		void clear() { 
+			tree.destroy();
+			start = last = this_end;
+		}
+
+		iterator find(const NodeValue& x)
+		{
+			auto FindResult= tree.find(x);
+			if(FindResult.second){
+				return iterator(FindResult.first, *this);
+			}else{
+				return end();
+			}
+		}
+
+		int count(const NodeValue& x) const
+		{ return find(x) == end()? 0 : 1; }
+
+		bool contains(const NodeValue& x) const
+		{ return find(x) != end(); }
+
+
+
+		iterator begin(){
+			return iterator(start, *this);
+		}
+		iterator end(){
+			return const_iterator(this_end, *this);
+		}
+
+		const_iterator begin() const {
+			return const_iterator(start);
+		}
+		const_iterator end() const {
+			return const_iterator(this_end, *this);
+		}
+
+		const_iterator cbegin() const {
+			return const_iterator(start);
+		}
+		const_iterator cend() const {
+			return const_iterator(this_end, *this);
+		}
+
+		std::reverse_iterator<iterator> rbegin() {
+			return std::reverse_iterator(end());
+		}
+
+		std::reverse_iterator<iterator> rend() {
+			return std::reverse_iterator(begin());
+		}
+
+		std::reverse_iterator<const_iterator> rbegin() const {
+			return std::reverse_iterator(end());
+		}
+
+		std::reverse_iterator<const_iterator> rend() const {
+			return std::reverse_iterator(begin());
+		}
+		std::reverse_iterator<const_iterator> crbegin() {
+			return std::reverse_iterator(cend());
+		}
+
+		std::reverse_iterator<const_iterator> crend() {
+			return std::reverse_iterator(cbegin());
+		}
+
+	};
+
 }
+
 
 
 #endif

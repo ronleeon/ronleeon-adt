@@ -12,21 +12,29 @@ namespace ronleeon{
 			static constexpr size_t value=2*Size-1;
 		};
 		// NOTICE:DataType must be comparable.
-		// DataType must supprot '>','<','=','>=','<=' and '+' traits.
+		// DataType must support '>','<','=','>=','<=' and '+' traits.
 		// to support weight, must override '*' operator.
 		// specified type can override these operators.
-		template<typename DataType,size_t Size,typename NodeType=node::h_node<DataType>>
+		template<typename DataType,size_t Size,typename NodeType=node::h_node<DataType>,typename NodePrintTrait = b_node_print_trait<NodeType>>
 		class h_tree:public abstract_b_tree<DataType,NodeType
-			,h_tree<DataType,Size,NodeType>>{
-			using basic_type=abstract_b_tree<DataType,NodeType,h_tree<DataType,Size,NodeType>>;
+			,h_tree<DataType,Size,NodeType,NodePrintTrait>, NodePrintTrait>{
+			using basic_type=abstract_b_tree<DataType,NodeType,h_tree<DataType,Size,NodeType,NodePrintTrait>,NodePrintTrait>;
 			// prohibit all create functions.
 			using basic_type::create_tree_l;
 			using basic_type::create_tree_r;
 			using basic_type::create_empty_tree;
 		
-			TREE_TRAITS(NodeType)
+		public:
+			using node_type = NodeType;
+			using node_pointer = NodeType*;
+			using node_type_reference = NodeType&;
+			using const_node_type = const NodeType;
+			using const_node_pointer = const NodeType*;
+			using const_node_type_reference = const NodeType&;
+
+			using PrintTrait = typename basic_type::PrintTrait;
 		private:
-			// proallocated nodes size within data sizes to be compared.
+			// preallocated nodes size within data sizes to be compared.
 
 			node_pointer _ele[compute_node_size<Size>::value];
 			// wpl: weighted path length
@@ -88,7 +96,8 @@ namespace ronleeon{
 					_sorted[min_index1] = true;
 					_sorted[min_index2]=true;
 					
-					auto *new_node = new NodeType(*min_data1 + *min_data2);
+					auto new_node = new NodeType();
+					new_node->data = *min_data1 + *min_data2;
 					// binary node
 					new_node->left_child=_ele[min_index1];
 					new_node->right_child=_ele[min_index2];
@@ -148,7 +157,8 @@ namespace ronleeon{
 			h_tree(const h_tree&t)=delete;
 			h_tree(const DataType data[]){
 				for(size_t Index=0;Index<Size;++Index){	
-					_ele[Index]=new NodeType(data[Index]);
+					_ele[Index]=new NodeType();
+					_ele[Index]->data = data[Index];
 				}
 				for(size_t Index=Size;Index< compute_node_size<Size>::value;++Index){
 					_ele[Index]=nullptr;
@@ -163,15 +173,7 @@ namespace ronleeon{
 				_wpl=tree._wpl;
 				_ele=tree._ele;
 			}
-			// return a shared tree holding the same nodes.
-			[[nodiscard("Unused Tree")]] h_tree make_shared() {
-				h_tree<DataType,Size,NodeType> Ret(basic_type::_root);
-				Ret._owned=false;
-				Ret._wpl=_wpl;
-				Ret._ele=_ele;
-				Ret.num_of_nodes=basic_type::num_of_nodes;
-				return Ret;
-			}
+
 			std::string to_string()const override {
 				return "<-Huffman tree->";
 			}

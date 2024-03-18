@@ -1,0 +1,8 @@
+//
+// Created by ronaldo on 2/12/23.
+//
+
+#ifndef RONLEEON_ADT_INTERVAL_TREE_H
+#define RONLEEON_ADT_INTERVAL_TREE_H
+
+#endif //RONLEEON_ADT_INTERVAL_TREE_H

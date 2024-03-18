@@ -4,15 +4,50 @@
 
 #include "ronleeon/tree/abstract_tree.h"
 #include <set>
+#include <iostream>
 
 namespace ronleeon{
 	namespace tree{
-		
-		template<typename DataType,typename NodeType=node::t_node<DataType>>
+		template<typename NodeType>
+		class t_node_print_trait{
+		public:
+			static void print_visiting_node(const NodeType* t, std::ostream& os){
+				os<< "visiting node:[";
+				if (!t) {
+					os << "null]";
+					return;
+				}
+				else {
+					os << t->data;
+				}
+				os << "]  ";
+				os<<"[Height:"<<t->height<<"] ";
+				if (t->is_leaf) {
+					os << "Leaf";
+				}
+				else {
+					os << "Node";
+				}
+				if(t->left_child&&!t->right_child){
+					os<<" has left child";
+				}else if(t->left_child&&t->right_child){
+					os<<" has left and right child";
+				}else if(!t->left_child&&t->right_child){
+					os<<" has right child";
+				}
+				if(t->left_is_thread){
+					os<<" ,left is thread";
+				}
+				if(t->right_is_thread){
+					os<<" ,right is thread";
+				}
+			}
+		};
+		template<typename DataType,typename NodeType=node::t_node<DataType>,typename NodePrintTrait = t_node_print_trait<NodeType>>
 		class t_tree:public abstract_b_tree<DataType,NodeType
-			,t_tree<DataType,NodeType>>{
+			,t_tree<DataType,NodeType,NodePrintTrait>,NodePrintTrait>{
 			using basic_type=abstract_b_tree<DataType,NodeType
-				,t_tree<DataType,NodeType>>;
+				,t_tree<DataType,NodeType,NodeType>,NodePrintTrait>;
 
 			// prohibits all public ordering methods.
 			using basic_type::level_order;
@@ -27,8 +62,15 @@ namespace ronleeon{
 				UNTHREADED,THREAD_PRE,THREAD_IN,THREAD_POST
 			};
 		
-		
-			TREE_TRAITS(NodeType)
+		public:
+			using node_type = NodeType;
+			using node_pointer = NodeType*;
+			using node_type_reference = NodeType&;
+			using const_node_type = const NodeType;
+			using const_node_pointer = const NodeType*;
+			using const_node_type_reference = const NodeType&;
+
+			using PrintTrait = typename basic_type::PrintTrait;
 		private:
 			// thread tree unresolved problem:
 			// 1): find prior of a node in pre-thread tree.
@@ -198,15 +240,7 @@ namespace ronleeon{
 			~t_tree(){
 				un_thread();
 			}
-			// return a shared tree holding the same nodes.
-			[[nodiscard("Unused Tree")]] t_tree make_shared() {
-				t_tree<DataType,NodeType> Ret(basic_type::_root);
-				Ret._owned=false;
-				Ret._thread_nodes=std::move(_thread_nodes);
-				Ret._kind=_kind;
-				Ret.num_of_nodes=basic_type::num_of_nodes;
-				return Ret;
-			}
+
 			t_tree():t_tree(nullptr){}
 			t_tree(const t_tree&)=delete;
 			std::string to_string() const override {
@@ -289,7 +323,7 @@ namespace ronleeon{
 				node_pointer tmp;
 				for(tmp=in_first(start);tmp;tmp=in_after(tmp)){
 					if (Echo) {
-						print_visiting_node(tmp,out);
+						PrintTrait::print_visiting_node(tmp,out);
 						out<<'\n';
 					}
 				}
@@ -300,7 +334,7 @@ namespace ronleeon{
 				node_pointer tmp;
 				for(tmp=pre_first(start);tmp;tmp=pre_after(tmp)){
 					if (Echo){
-						print_visiting_node(tmp,out);
+						PrintTrait::print_visiting_node(tmp,out);
 						out<<'\n';
 					}
 				}
@@ -311,15 +345,13 @@ namespace ronleeon{
 				std::cerr<<"We cannot leverage post order threads.\n";
 			}
 			
-			void print_visiting_node(node_pointer node,std::ostream &out)const{
-				basic_type::print_visiting_node(node,out);
-				if(node->left_is_thread){
-					out<<" ,left is thread";
-				}
-				if(node->right_is_thread){
-					out<<" ,right is thread";
-				}
-			}
+
+            static t_tree create_tree_l(std::istream &in=std::cin){
+                return abstract_b_tree<DataType,NodeType,t_tree<DataType,NodeType>>::create_tree_l(in);
+            }
+            static t_tree create_tree_r(std::istream &in=std::cin){
+                return abstract_b_tree<DataType,NodeType,t_tree<DataType,NodeType>>::create_tree_r(in);
+            }
 		};
 	}
 }
