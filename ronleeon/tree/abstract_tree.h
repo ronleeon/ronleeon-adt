@@ -683,9 +683,9 @@ namespace ronleeon::tree {
 		protected:
 			explicit abstract_bs_tree(std::nullptr_t, Compare comp_ =  Compare{}):basic_type(nullptr), comp(comp_){}
 		public:
-			abstract_bs_tree(Compare comp_ =  Compare{}):abstract_bs_tree(nullptr), comp(comp_){};
+			abstract_bs_tree(Compare comp_ =  Compare{}):abstract_bs_tree(nullptr, comp_){};
 			abstract_bs_tree(const abstract_bs_tree&)=delete;
-			abstract_bs_tree(const DataType data[],size_t Size,Compare comp_ =  Compare{}):basic_type(nullptr), comp(comp_){
+			abstract_bs_tree(const DataType data[],size_t Size,Compare comp_ =  Compare{}):basic_type(nullptr, comp_){
 				for(size_t Index=0;Index<Size;++Index){	
 					insert(data[Index]);
 				}
