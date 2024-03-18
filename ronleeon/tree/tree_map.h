@@ -2,11 +2,13 @@
 #ifndef RONLEEON_ADT_TREE_MAP_H
 #define RONLEEON_ADT_TREE_MAP_H
 
-#include "ronleeon/tree/bs_tree.h"
-#include "ronleeon/tree/avl_tree.h"
 #include "ronleeon/tree/rb_tree.h"
+#include <cstdint>
 #include <functional>
 #include <exception>
+#include <type_traits>
+#include <utility>
+#include "ronleeon/tree/bs_tree.h"
 
 
 namespace ronleeon{
@@ -21,11 +23,12 @@ namespace ronleeon{
 			{ return x < y; }
 		};
 
-		// provid default NodeType for tree.
+		// provide default NodeType for tree.
 		template <typename Key,typename Value>
 		struct pair{
 			pair(const Key& k,const Value& v):first(k),second(v){
 			}
+			pair() = default;
 			pair(Key&& k,Value&& v):first(std::move(k)),second(std::move(v)){
 			}
 			pair(pair&& pair):first(std::move(pair.first)),second(std::move(pair.second)){}
@@ -69,105 +72,107 @@ namespace ronleeon{
 		};
 		
 		
-		// Provide Java style Iterator.
 		template<typename NodeType,typename ValueType,typename Tree>
-		struct tree_map_iterator;
-		template<typename NodeType,typename ValueType,typename Tree>
-		struct tree_map_iterator<NodeType*,ValueType,Tree>
+		struct tree_map_iterator
 		{
 
-			typedef NodeType*  type;
-			typedef NodeType*& reference;
-			typedef NodeType** pointer;
-			typedef ValueType value_type;
+			using iterator_category = std::forward_iterator_tag;
+			using difference_type   = std::ptrdiff_t;
+			using value_type        = const ValueType;
+			using pointer           = const ValueType*; 
+			using reference         = const ValueType&;  
 
-			type node;
-			tree_map_iterator() : node() { }
+			const NodeType* node;
+			const Tree& tree;
+
+			tree_map_iterator(const Tree& container) : tree(container), node(nullptr) { }
 
 			explicit
-			tree_map_iterator(type x) :node(x) { }
+			tree_map_iterator(const NodeType* x,const Tree& container) :tree(container),node(x) { }
 
-			reference get_node_ptr()const{
-				return static_cast<reference>(node);
+			const NodeType* get_node_ptr()const{
+				return node;
 			}
 
-			ValueType operator*() const 
+			reference operator*() const 
 			{ return node->data;}
 
-			ValueType* operator->() const
+			pointer operator->() const
 			{ return &(node->data); }
 
 
-			bool has_next(){
-				tree_map_iterator Tmp(this->node);
-				Tree::tree_map_increment(Tmp);
-				return Tmp.is_null()?false:true;
-			}
-
-			bool is_null() const {
-				return node?false:true;
-			}
-			
 
 			tree_map_iterator& operator++() 
 			{	
-				node=Tree::tree_map_increment(node);
+				node=tree.tree_map_increment(node);
 				return *this;
 			}
 
 			tree_map_iterator operator++(int) 
 			{	
 				tree_map_iterator Tmp(node);
-				node=Tree::tree_map_increment(node);
+				node=tree.tree_map_increment(node);
 				return Tmp;
 			}
 
 			tree_map_iterator& operator--()
 			{
-				node=Tree::tree_map_decrement(node);
+				node=tree.tree_map_decrement(node);
 				return *this;
 			}
 
 			tree_map_iterator operator--(int)
 			{
 				tree_map_iterator Tmp(node);
-				node=Tree::tree_map_decrement(node);
+				node=tree.tree_map_decrement(node);
 				return Tmp;
 			}
 			
-			operator bool()
-			{
-				return !is_null();
-			}
 
 			friend bool operator==(const tree_map_iterator& x, const tree_map_iterator& y)
 			{ 
-				return x.node=y.node; 
-			}	
+				return x.node==y.node; 
+			}
+
+			friend bool operator!=(const tree_map_iterator& x, const tree_map_iterator& y)
+			{ 
+				return x.node!=y.node; 
+			}		
 		};
 
 
 		// map have a key and value, so we use tree::pair for a node value.
-		// Alternatively, you can implements you own tree , such as bs_tree, avl_tree
+		// Alternatively, you can implement you own tree , such as bs_tree, avl_tree
 		//, and rb_tree.(pure bs_tree is not recommended)
 
-		template <typename Key,typename Value,typename NodeValue=tree::pair<Key,Value>,typename Compare=tree::less<NodeValue>,
-			typename Tree=rb_tree<NodeValue,Compare>>
+		template <typename Key,typename Value,typename Compare=tree::less<tree::pair<Key,Value>>,
+			typename Tree=rb_tree<tree::pair<Key,Value>,Compare>>
 		class tree_map{
+
+			using NodeValue=tree::pair<Key,Value>;
 		public:
-			typedef tree_map_iterator<typename Tree::node_pointer,NodeValue,tree_map> iterator;
+			typedef tree_map_iterator<typename Tree::node_type,NodeValue,tree_map> iterator;
+			typedef iterator const_iterator;
 		private:
+
+
+			// First and Last children
+			typename Tree::const_node_pointer start;
+
+			typename Tree::const_node_pointer last;
+			// use in end iterator, implement as `this` ptr.
+			typename Tree::const_node_pointer this_end;
+
 			Tree tree;
 		public:
-			tree_map():tree(){ 
-			}
+			tree_map(Compare comp_ = Compare{} ):tree(comp_),last(reinterpret_cast<typename Tree::const_node_pointer>(this)), start(reinterpret_cast<typename Tree::const_node_pointer>(this)),this_end(reinterpret_cast<typename Tree::const_node_pointer>(this)){}
 
 			tree_map(const tree_map&) = delete;
 
 			tree_map(tree_map&&) = delete;
 
-			tree_map(std::initializer_list<NodeValue> l)
-			: tree_map()
+			tree_map(std::initializer_list<NodeValue> l,Compare comp_ = Compare{} )
+			: tree_map(comp_)
 			{ 
 				insert(l); 
 			}
@@ -183,24 +188,24 @@ namespace ronleeon{
 				return tree.size();
 			}
 
-			static typename Tree::node_pointer tree_map_increment(typename Tree::node_pointer value){
-				return Tree::increment(value);
+			typename Tree::const_node_pointer tree_map_increment(typename Tree::const_node_pointer value) const {
+				auto Next = Tree::increment(value);
+				if(!Next){
+					return this_end;
+				}
+				return Next;
 			}
 
 
-			static typename Tree::node_pointer tree_map_decrement(typename Tree::node_pointer value){
-				return Tree::decrement(value);
-			}
-
-
-			// Return an iterator of the first element or the last element.
-			
-			iterator iter() { 
-				return iterator(tree.left_most(tree.get_root())); 
-			}
-
-			iterator iter_last(){
-				return iterator(tree.right_most(tree.get_root())); 
+			typename Tree::const_node_pointer tree_map_decrement(typename Tree::const_node_pointer value) const {
+				if(value == reinterpret_cast<typename Tree::const_node_pointer>(this)){
+					return last;
+				}
+				auto Pre = Tree::decrement(value);
+				if(!Pre){
+					return this_end;
+				}
+				return Pre;
 			}
 
 			Value&
@@ -242,43 +247,24 @@ namespace ronleeon{
 			std::pair<iterator, bool> insert(const NodeValue& x)
 			{ 
 				std::pair<iterator,bool> Ret;
-				auto InsertResult=tree.insert(x);
-				if(InsertResult.second){
-					Ret.first=iterator(InsertResult.first);
-					Ret.second=true;
+				if(auto InsertResult=tree.insert(x); InsertResult.second){
+					start = tree.start();
+					last = tree.last();
+					return std::make_pair(iterator(InsertResult.first, *this), true);
 				}else{
-					Ret.first=iterator(nullptr);
-					Ret.second=false;
+					return std::make_pair(end(), false);
 				}
-				return Ret;
-			}
-
-			std::pair<iterator, bool> insert(NodeValue&& x)
-			{ 	
-				std::pair<iterator,bool> Ret;
-				auto InsertResult=tree.insert(std::move(x));
-				if(InsertResult.second){
-					Ret.first=iterator(InsertResult.first);
-					Ret.second=true;
-				}else{
-					Ret.first=iterator(nullptr);
-					Ret.second=false;
-				}
-				return Ret; 
 			}
 
 			std::pair<iterator,bool> insert(const Key& k,const Value &v)
 			{ 
-				std::pair<iterator,bool> Ret;
-				auto InsertResult=tree.insert(NodeValue(k,v));
-				if(InsertResult.second){
-					Ret.first=iterator(InsertResult.first);
-					Ret.second=true;
+				if(auto InsertResult=tree.insert(NodeValue(k,v)); InsertResult.second){
+					start = tree.start();
+					last = tree.last();
+					return std::make_pair(iterator(InsertResult.first, *this), true);
 				}else{
-					Ret.first=iterator(nullptr);
-					Ret.second=false;
+					return std::make_pair(end(), false);
 				}
-				return Ret; 
 			}
 
 
@@ -295,69 +281,115 @@ namespace ronleeon{
 				}	
 			}
 
-
-			std::pair<iterator, bool> insert_or_assign(const Key k, const Value v){
-				std::pair<iterator,bool> Ret;
-				auto InsertResult=tree.insert(NodeValue(k,v));
-				if(InsertResult.second){
-					Ret.second=true;
-					Ret.first=iterator(InsertResult.first);
+			iterator insert_or_assign(const Key& k, const Value& v){
+				if(auto InsertResult=tree.insert(NodeValue(k,v)); InsertResult.second){
+					start = tree.start();
+					last = tree.last();
+					return iterator(InsertResult.first, *this);
 				}else{
-					Ret.first=iterator(InsertResult.first);
-					InsertResult.first->data=NodeValue(k,v);//assign
-					Ret.second=false;
+					// HACK: insert before delete
+					erase(k);
+					InsertResult = tree.insert(NodeValue(k,v));
+					start = tree.start();
+					last = tree.last();
+					return iterator(InsertResult.first, *this);
 				}
-				return Ret; 
 			}
 
 			iterator erase(iterator position)
 			{ 
-				auto EraseResult=tree.erase(position.get_node_ptr());
+				auto Node = position.get_node();
+				auto EraseResult=tree.erase(Node);
 				if(EraseResult){
-					return iterator(nullptr);
+					return end();
 				}else{
-					return iterator(EraseResult);
+					start = tree.start();
+					last = tree.last();
+					if(!start){
+						start = this_end;
+					}
+					if(!last){
+						last = this_end;
+					}
+					return iterator(EraseResult, *this);
 				}
 			}
 			
 
 			void erase(const Key& x)
-			{ 
+			{
 				tree.erase(NodeValue(x,Value()));
 			}
 
 
-			void clear() { tree.destroy(); }
+			void clear() { 
+				tree.destroy();
+				start = last = this_end;
+			}
 
 
 
-			iterator find(const Key& x)
+			const_iterator find(const Key& x)
 			{ 
 				auto FindResult= tree.find(NodeValue(x,Value())); 
 				if(FindResult.second){
-					return iterator(FindResult.first);
+					return iterator(FindResult.first, *this);
 				}else{
-					return iterator(nullptr);
+					return end();
 				}
 			} 
 
-			iterator find(Key&& x)
-			{ 
-				auto FindResult= tree.find(NodeValue(std::move(x),Value())); 
-				if(FindResult.second){
-					return iterator(FindResult.first);
-				}else{
-					return iterator(nullptr);
-				}
-			} 
 
 			int count(const Key& x) const
-			{ return find(x) == iterator(nullptr) ? 0 : 1; }
+			{ return find(x) == end() ? 0 : 1; }
 
 			bool contains(const Key& x) const
-			{ return find(x) != iterator(nullptr); }
+			{ return find(x) != end(); }
 
 
+		iterator begin(){
+			return iterator(start, *this);
+		}
+		iterator end(){
+			return iterator(this_end, *this);
+		}
+
+		const_iterator begin() const {
+			return const_iterator(start);
+		}
+		const_iterator end() const {
+			return const_iterator(this_end, *this);
+		}
+
+		const_iterator cbegin() const {
+			return const_iterator(start);
+		}
+		const_iterator cend() const {
+			return const_iterator(this_end, *this);
+		}
+
+		std::reverse_iterator<iterator> rbegin() {
+			return std::reverse_iterator(end());
+		}
+
+		std::reverse_iterator<iterator> rend() {
+			return std::reverse_iterator(begin());
+		}
+
+		std::reverse_iterator<const_iterator> rbegin() const {
+			return std::reverse_iterator(end());
+		}
+
+		std::reverse_iterator<const_iterator> rend() const {
+			return std::reverse_iterator(begin());
+		}
+		std::reverse_iterator<const_iterator> crbegin() {
+			return std::reverse_iterator(cend());
+		}
+
+		std::reverse_iterator<const_iterator> crend() {
+			return std::reverse_iterator(cbegin());
+		}
 
 		};
 
