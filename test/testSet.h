@@ -14,7 +14,7 @@ void testSet() {
 	for(auto It = set.rbegin();It != set.rend(); ++It){
 		std::cout<<*It<<'\n';
 	}
-	set.clear();
+	//set.clear();
 	ronleeon::tree::tree_map<int,int,ronleeon::tree::less<ronleeon::tree::pair<int,int>>,ronleeon::tree::rb_tree<ronleeon::tree::pair<int,int>
 	,ronleeon::tree::less<ronleeon::tree::pair<int,int>>>> m;
 	m.insert(1,2);
@@ -28,4 +28,6 @@ void testSet() {
 	for(auto It = m.rbegin();It != m.rend(); ++It){
 		std::cout<<It->first<<","<<It->second<<'\n';
 	}
+	std::cout<<*(++set.rend())<<'\n';
+	std::cout<<(--m.end())->first<<","<<(--m.end())->second<<'\n';
 }

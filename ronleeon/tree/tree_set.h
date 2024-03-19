@@ -33,10 +33,14 @@ namespace ronleeon::tree{
 		}
 
 		reference operator*() const
-		{ return node->data;}
+		{ 
+			return node->data;
+		}
 
 		pointer operator->() const
-		{ return &(node->data); }
+		{
+			return &(node->data); 
+		}
 
 
 		tree_set_iterator& operator++()
@@ -123,6 +127,9 @@ namespace ronleeon::tree{
 		}
 
 		typename Tree::const_node_pointer tree_set_increment(typename Tree::const_node_pointer value) const {
+			if(value == this_end){
+				return start;
+			}
 			auto Next = Tree::increment(value);
 			if(!Next){
 				return this_end;
@@ -132,14 +139,14 @@ namespace ronleeon::tree{
 
 
 		typename Tree::const_node_pointer tree_set_decrement(typename Tree::const_node_pointer value) const {
-			if(value == reinterpret_cast<typename Tree::const_node_pointer>(this)){
-					return last;
-				}
-				auto Pre = Tree::decrement(value);
-				if(!Pre){
-					return this_end;
-				}
-				return Pre;
+			if(value == this_end){
+				return last;
+			}
+			auto Pre = Tree::decrement(value);
+			if(!Pre){
+				return this_end;
+			}
+			return Pre;
 		}
 
 
