@@ -95,10 +95,14 @@ namespace ronleeon{
 			}
 
 			reference operator*() const 
-			{ return node->data;}
+			{ 
+				return node->data;
+			}
 
 			pointer operator->() const
-			{ return &(node->data); }
+			{ 	 
+				return &(node->data); 
+			}
 
 
 
@@ -189,6 +193,9 @@ namespace ronleeon{
 			}
 
 			typename Tree::const_node_pointer tree_map_increment(typename Tree::const_node_pointer value) const {
+				if(value == this_end){
+					return start;
+				}
 				auto Next = Tree::increment(value);
 				if(!Next){
 					return this_end;
@@ -198,7 +205,7 @@ namespace ronleeon{
 
 
 			typename Tree::const_node_pointer tree_map_decrement(typename Tree::const_node_pointer value) const {
-				if(value == reinterpret_cast<typename Tree::const_node_pointer>(this)){
+				if(value == this_end){
 					return last;
 				}
 				auto Pre = Tree::decrement(value);
